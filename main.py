@@ -6,11 +6,11 @@ Simple RAG - 简单检索增强生成示例
 import argparse
 from dotenv import load_dotenv
 
-from src.loader import load_documents
-from src.embedder import Embedder
-from src.vectorstore import VectorStore
-from src.retriever import Retriever
-from src.generator import Generator
+from src.use_ChromaDB.loader import load_documents
+from src.use_ChromaDB.embedder import Embedder
+from src.use_ChromaDB.vectorstore import VectorStore
+from src.use_ChromaDB.retriever import Retriever
+from src.use_ChromaDB.generator import Generator
 
 
 def main():
