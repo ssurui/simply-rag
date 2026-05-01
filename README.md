@@ -6,31 +6,31 @@
 
 ### 方案一：use_ChromaDB
 
-使用 ChromaDB 作为向量数据库，Sentence Transformers 进行本地嵌入，Claude API 生成回答。适合快速原型验证，无需额外部署数据库。
+使用 ChromaDB 作为向量数据库，Ollama bge-m3 进行本地嵌入，Ollama qwen3:8b 生成回答，支持流式输出思考过程。提供命令行界面，无需额外部署数据库服务。
 
 ```
 文档（TXT / Markdown / PDF）
     ↓
-分块 → Sentence Transformers 向量化 → ChromaDB
-                                           ↓
-用户提问 → 向量化 → 相似度检索
-                                           ↓
-                              Claude API 生成回答
+分块（500字符）→ Ollama bge-m3 向量化 → ChromaDB 持久化
+                                               ↓
+用户提问 → 向量化 → 相似度检索（余弦）
+                                               ↓
+                              Ollama qwen3:8b 流式生成回答
 ```
 
 ### 方案二：use_pgvector
 
-使用 PostgreSQL + pgvector 作为向量数据库，Ollama bge-m3 进行嵌入，Ollama qwen3:8b 生成回答，并提供 Gradio Web 界面。适合数据需要持久化、完全本地化运行的场景。
+使用 PostgreSQL + pgvector 作为向量数据库，Ollama bge-m3 进行嵌入，Ollama qwen3:8b 生成回答，并提供 Gradio Web 界面。适合需要持久化存储、完全本地化运行的场景。
 
 ```
 文档（Markdown）
     ↓
-分块 → Ollama bge-m3 向量化 → PostgreSQL（pgvector）
-                                           ↓
+分块（500字符）→ Ollama bge-m3 向量化 → PostgreSQL（pgvector）
+                                               ↓
 用户提问 → 向量化 → 相似度检索（内积）
-                                           ↓
-                              Ollama qwen3:8b 流式生成
-                                           ↓
+                                               ↓
+                              Ollama qwen3:8b 流式生成回答
+                                               ↓
                               Gradio Web 界面展示
 ```
 
@@ -38,28 +38,35 @@
 
 ```
 simple-rag/
-├── main.py                        # use_ChromaDB 方案的命令行入口
-├── requirements.txt               # Python 依赖
+├── requirements.txt
 ├── example/
-│   └── sample.txt                 # 示例文档
-├── docs/                          # 待索引文档（已 git 忽略）
+│   └── sample.txt                     # 示例文档
+├── docs/                              # 待索引文档
 └── src/
-    ├── use_ChromaDB/              # 方案一：ChromaDB + Claude API
-    │   ├── loader.py              # 文档加载（TXT / Markdown / PDF）
-    │   ├── embedder.py            # 文本向量化（Sentence Transformers）
-    │   ├── vectorstore.py         # 向量存储与检索（ChromaDB）
-    │   ├── retriever.py           # 检索协调器
-    │   └── generator.py           # 回答生成（Claude API）
-    └── use_pgvector/              # 方案二：pgvector + Ollama
-        ├── simple.py              # 文档入库 & 向量查询
-        └── rag_ui.py              # Gradio Web 问答界面
+    ├── use_ChromaDB/                  # 方案一：ChromaDB + Ollama
+    │   ├── main.py                    # 命令行入口（index / query / run）
+    │   ├── loader.py                  # 文档加载与分块（TXT / Markdown / PDF）
+    │   ├── embedder.py                # 文本向量化（Ollama bge-m3）
+    │   ├── vectorstore.py             # 向量存储与检索（ChromaDB）
+    │   ├── retriever.py               # 检索协调器
+    │   └── generator.py              # 流式回答生成（Ollama qwen3:8b）
+    └── use_pgvector/                  # 方案二：pgvector + Ollama
+        ├── simple.py                  # 文档入库 & 向量查询
+        └── rag_ui.py                  # Gradio Web 问答界面
 ```
 
 ## 快速开始
 
-### 方案一：use_ChromaDB
+### 前置条件（两种方案均需要）
 
-**安装依赖**
+本地运行 Ollama，并拉取所需模型：
+
+```bash
+ollama pull bge-m3
+ollama pull qwen3:8b
+```
+
+安装 Python 依赖：
 
 ```bash
 python3 -m venv .venv
@@ -67,43 +74,50 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**配置 Claude API Key**
+---
+
+### 方案一：use_ChromaDB
+
+所有命令在 `src/use_ChromaDB/` 目录下执行。
+
+**第一步：文档入库（持久化到 ChromaDB）**
 
 ```bash
-# 创建 .env 文件
-echo "ANTHROPIC_API_KEY=your_key_here" > .env
+cd src/use_ChromaDB
+python main.py index --docs ../../docs/ --persist ./chroma_db
 ```
 
-**运行**
+**第二步：问答查询**
 
 ```bash
-# 使用示例文档问答
-python main.py --docs example/sample.txt --query "RAG 的工作流程是什么？"
-
-# 指定 top-k 和持久化目录
-python main.py --docs ./docs/ --query "你的问题" --top-k 3 --persist ./chroma_db
+python main.py query --query "你的问题" --persist ./chroma_db --top-k 5
 ```
 
-| 参数 | 必填 | 说明 |
-|------|------|------|
-| `--docs` | 是 | 文档路径（文件或目录） |
-| `--query` | 是 | 用户问题 |
-| `--top-k` | 否 | 检索片段数量（默认 5） |
-| `--persist` | 否 | 向量库持久化目录（不填则内存模式） |
+**一次性完成入库+查询（内存模式）**
+
+```bash
+python main.py run --docs ../../docs/ --query "你的问题"
+```
+
+| 子命令 | 参数 | 说明 |
+|--------|------|------|
+| `index` | `--docs` | 文档路径（文件或目录） |
+| `index` | `--persist` | 向量库持久化目录（默认 `./chroma_db`） |
+| `query` | `--query` | 用户问题 |
+| `query` | `--persist` | 向量库持久化目录（默认 `./chroma_db`） |
+| `query` | `--top-k` | 检索片段数量（默认 5） |
+| `run`   | `--docs` `--query` | 入库+查询一次完成 |
+
+**重新入库（清空旧数据）**
+
+```bash
+rm -rf ./chroma_db
+python main.py index --docs ../../docs/ --persist ./chroma_db
+```
 
 ---
 
 ### 方案二：use_pgvector
-
-**前置条件**
-
-- 本地运行 PostgreSQL，并安装 pgvector 扩展
-- 本地运行 Ollama，并拉取所需模型：
-
-```bash
-ollama pull bge-m3
-ollama pull qwen3:8b
-```
 
 **数据库初始化**
 
@@ -125,7 +139,7 @@ CREATE TABLE simple_rag (
 
 **文档入库**
 
-将文档放入 `docs/` 目录，修改 `src/use_pgvector/simple.py` 末尾的 `file_path`，然后运行：
+修改 `src/use_pgvector/simple.py` 末尾的 `file_path`，然后运行：
 
 ```bash
 cd src/use_pgvector
@@ -140,16 +154,20 @@ python3 rag_ui.py
 # 浏览器访问 http://localhost:7860
 ```
 
+---
+
 ## 方案对比
 
 | 对比项 | use_ChromaDB | use_pgvector |
 |--------|-------------|-------------|
 | 向量数据库 | ChromaDB（内嵌） | PostgreSQL + pgvector |
-| 嵌入模型 | Sentence Transformers（本地） | Ollama bge-m3（本地服务） |
-| 生成模型 | Claude API（云端） | Ollama qwen3:8b（本地） |
-| Web 界面 | 无（命令行） | Gradio |
+| 嵌入模型 | Ollama bge-m3 | Ollama bge-m3 |
+| 生成模型 | Ollama qwen3:8b | Ollama qwen3:8b |
+| 分块大小 | 500 字符 | 500 字符 |
+| 流式输出 | 是 | 是 |
+| 界面形式 | 命令行 | Gradio Web |
 | 数据持久化 | 可选 | 是 |
-| 完全本地化 | 否 | 是 |
+| 额外服务依赖 | 无 | PostgreSQL |
 
 ## 许可证
 
