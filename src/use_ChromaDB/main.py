@@ -46,6 +46,14 @@ def cmd_query(args):
     results = retriever.retrieve(args.query, top_k=args.top_k)
     print(f"  检索到 {len(results)} 个相关片段")
 
+    print("\n" + "=" * 60)
+    print("检索到的片段：")
+    print("=" * 60)
+    for i, r in enumerate(results):
+        print(f"\n【片段 {i+1}】相关度：{r['score']}  来源：{r['source']}")
+        print(r['content'])
+    print("=" * 60)
+
     answer = Generator().generate(args.query, results)
     print("\n" + "=" * 60)
     print("回答：")
