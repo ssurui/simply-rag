@@ -1,62 +1,41 @@
-"""文档加载模块：支持 TXT、PDF、Markdown 格式"""
+"""文档加载模块：支持 TXT、PDF、Markdown 格式，固定 500 字符分块"""
 
-import os
 from pathlib import Path
 from typing import List
+from langchain_community.document_loaders import TextLoader
+from langchain_text_splitters import CharacterTextSplitter
+
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 0
+
+_splitter = CharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+
+
+def _split(file_path: str, text: str) -> List[dict]:
+    """将原始文本按固定长度切块，返回统一格式"""
+    chunks = _splitter.split_text(text)
+    return [{"content": chunk, "source": file_path, "index": i} for i, chunk in enumerate(chunks)]
 
 
 def load_text_file(file_path: str) -> List[dict]:
-    """加载纯文本文件，按段落分割"""
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
-    return [
-        {"content": para, "source": file_path, "index": i}
-        for i, para in enumerate(paragraphs)
-    ]
+    """加载纯文本文件"""
+    docs = TextLoader(file_path, encoding="utf-8").load()
+    return _split(file_path, docs[0].page_content)
 
 
 def load_pdf_file(file_path: str) -> List[dict]:
-    """加载 PDF 文件，按页分割"""
+    """加载 PDF 文件"""
     import fitz  # PyMuPDF
 
-    docs = []
     with fitz.open(file_path) as pdf:
-        for page_num, page in enumerate(pdf):
-            text = page.get_text().strip()
-            if text:
-                docs.append(
-                    {
-                        "content": text,
-                        "source": file_path,
-                        "index": page_num,
-                    }
-                )
-    return docs
+        text = "\n".join(page.get_text() for page in pdf)
+    return _split(file_path, text)
 
 
 def load_markdown_file(file_path: str) -> List[dict]:
-    """加载 Markdown 文件，按标题段落分割"""
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    sections = []
-    current = []
-    for line in content.splitlines():
-        if line.startswith("#") and current:
-            sections.append("\n".join(current))
-            current = [line]
-        else:
-            current.append(line)
-    if current:
-        sections.append("\n".join(current))
-
-    return [
-        {"content": sec.strip(), "source": file_path, "index": i}
-        for i, sec in enumerate(sections)
-        if sec.strip()
-    ]
+    """加载 Markdown 文件"""
+    docs = TextLoader(file_path, encoding="utf-8").load()
+    return _split(file_path, docs[0].page_content)
 
 
 def load_documents(path: str) -> List[dict]:
