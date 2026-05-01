@@ -99,10 +99,10 @@ def query_by_vector(query, top_k=3):
     return results
 
 if __name__ == "__main__":
-#     file_path = "docs/MinerU_markdown_2011上海大众新帕萨特汽车维修手册_前半本（1-200）.md"
+#     file_path = "../../docs/MinerU_markdown_2011上海大众新帕萨特汽车维修手册_前半本（1-200）.md"
 #     process_file(file_path)
 
-    # file_path = "docs/MinerU_markdown_2011上海大众新帕萨特汽车维修手册_后半本（201-391）.md"
+    # file_path = "../../docs/MinerU_markdown_2011上海大众新帕萨特汽车维修手册_后半本（201-391）.md"
     # process_file(file_path)
 
     query = "更换齿轮油要注意那些？"
