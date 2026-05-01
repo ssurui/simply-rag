@@ -1,68 +1,72 @@
 # CLAUDE.md — 项目约定与开发指南
 
-本文件供 Claude Code 在协助开发此项目时参考。
+本文件供 Claude Code 在协助开发此项目时参考。所有文档、注释、提交信息均使用中文。
 
 ## 项目概述
 
-Simple RAG 是一个最小化的检索增强生成（RAG）示例项目，使用 Python 实现，核心依赖为 ChromaDB、Sentence Transformers 和 Anthropic Claude API。
+Simple RAG 是一个本地化 RAG 问答系统，核心链路为：
 
-## 技术栈约定
+**文档入库**：Markdown 文件 → LangChain 分块 → Ollama bge-m3 向量化 → PostgreSQL（pgvector）
 
-- **Python 版本**：3.10+
-- **包管理**：`pip` + `requirements.txt`，使用虚拟环境 `.venv`
-- **代码风格**：遵循 PEP 8，类型注解优先，函数保持单一职责
-- **API 调用**：所有 Anthropic API 调用统一在 `src/generator.py` 中进行
-- **环境变量**：通过 `.env` 文件管理，使用 `python-dotenv` 加载，不得硬编码密钥
+**在线问答**：用户提问 → bge-m3 向量化 → PostgreSQL 相似度检索 → Ollama qwen3:8b 流式生成 → Gradio 展示
 
-## 目录结构说明
+## 技术栈
+
+- **Python 版本**：3.10+，使用虚拟环境 `.venv`
+- **向量数据库**：PostgreSQL + pgvector 扩展
+- **嵌入模型**：bge-m3（通过 Ollama 本地调用，端口 11434）
+- **生成模型**：qwen3:8b（通过 Ollama 本地调用）
+- **Web 框架**：Gradio 6.x
+- **数据库驱动**：psycopg（psycopg3）
+
+## 文件说明
 
 ```
-src/loader.py       # 文档加载，新增格式在此处添加对应 loader 函数
-src/embedder.py     # 嵌入模型封装，模型名称通过常量配置
-src/vectorstore.py  # ChromaDB 封装，接口需保持稳定
-src/retriever.py    # 协调 embedder 与 vectorstore，不含业务逻辑
-src/generator.py    # Claude API 调用，prompt 在此文件中维护
-main.py             # CLI 入口，仅负责参数解析与流程串联
+src/simple.py    # 文档处理与数据库操作的核心模块
+src/rag_ui.py    # Web 界面，依赖 simple.py 中的 query_by_vector()
+docs/            # 存放待索引的原始文档（已加入 .gitignore，不提交）
 ```
+
+## 数据库约定
+
+- 表名：`simple_rag`
+- 向量字段：`embedding vector(1024)`（bge-m3 输出维度）
+- 相似度计算：`-(embedding <#> %s)` 负内积，归一化向量下等价于余弦相似度
+- 连接配置在 `simple.py` 中硬编码，修改时同步更新 `rag_ui.py` 中的导入依赖
 
 ## 开发规范
 
-### 添加新文档格式
+### 新增文档格式支持
 
-在 `src/loader.py` 中新增一个 `load_xxx_file(file_path: str) -> List[dict]` 函数，并在 `load_documents()` 的 `loaders` 字典中注册对应扩展名。每个文档片段的结构必须包含：
-
-```python
-{"content": str, "source": str, "index": int}
-```
+在 `simple.py` 中参考 `load_document()` 函数，替换或扩展 LangChain 的 Loader，保持返回格式兼容 `split_document()` 的输入。
 
 ### 修改 Prompt
 
-系统提示词位于 `src/generator.py` 的 `SYSTEM_PROMPT` 常量中。修改时注意：
-- 保持"仅基于提供的文档回答"这一核心约束
-- 不得让模型编造文档中不存在的内容
+系统提示词位于 `rag_ui.py` 的 `DEFAULT_SYSTEM_PROMPT` 常量中，修改时保留"只能依据上下文回答"这一核心约束。
 
-### 测试
+### 安装依赖
 
-目前无自动化测试框架。手动测试时使用 `example/sample.txt` 作为测试文档：
+始终使用虚拟环境安装，避免污染系统 Python：
 
 ```bash
-python main.py --docs example/sample.txt --query "RAG 的核心优势是什么？"
+source .venv/bin/activate
+pip install 包名
 ```
 
-## 常见问题
+## 运行方式
 
-**Q：运行时提示找不到 ANTHROPIC_API_KEY**
-A：在项目根目录创建 `.env` 文件，写入 `ANTHROPIC_API_KEY=sk-ant-...`
+```bash
+# 文档入库
+python3 src/simple.py
 
-**Q：嵌入模型首次运行很慢**
-A：首次运行会自动下载模型文件（约 400MB），下载完成后会缓存到本地。
+# 启动 Web 界面（需在 src 目录下运行，因为 rag_ui.py 直接 import simple）
+cd src && python3 rag_ui.py
+# 访问 http://localhost:7860
+```
 
-**Q：如何切换生成模型**
-A：修改 `src/generator.py` 中的 `DEFAULT_MODEL` 常量，可用值参考 Anthropic 文档。
+## 注意事项
 
-## 不建议做的事
-
-- 不要在 `main.py` 中加入业务逻辑，保持其只作为 CLI 入口
-- 不要在代码中硬编码 API 密钥或路径
-- 不要在单次检索中返回超过 10 个文档片段（影响 context 质量）
-- 不要修改 `vectorstore.py` 的公开接口签名，除非同步更新 `retriever.py`
+- `rag_ui.py` 中 `from simple import query_by_vector` 要求在 `src/` 目录下运行，否则找不到模块
+- Ollama 服务必须在本地 11434 端口运行，且已拉取 `bge-m3` 和 `qwen3:8b` 模型
+- `docs/` 目录已加入 `.gitignore`，文档不会提交到仓库
+- PostgreSQL 连接密码为 `example`，生产环境请改用环境变量管理
