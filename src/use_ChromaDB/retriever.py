@@ -1,8 +1,8 @@
 """检索模块：协调嵌入与向量库完成语义检索"""
 
 from typing import List
-from .embedder import Embedder
-from .vectorstore import VectorStore
+from embedder import Embedder
+from vectorstore import VectorStore
 
 
 class Retriever:

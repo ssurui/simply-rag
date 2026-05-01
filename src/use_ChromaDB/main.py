@@ -14,11 +14,11 @@ Simple RAG - 简单检索增强生成示例
 
 import argparse
 
-from src.use_ChromaDB.loader import load_documents
-from src.use_ChromaDB.embedder import Embedder
-from src.use_ChromaDB.vectorstore import VectorStore
-from src.use_ChromaDB.retriever import Retriever
-from src.use_ChromaDB.generator import Generator
+from loader import load_documents
+from embedder import Embedder
+from vectorstore import VectorStore
+from retriever import Retriever
+from generator import Generator
 
 
 def cmd_index(args):
