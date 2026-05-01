@@ -6,7 +6,7 @@
 
 ### 方案一：use_ChromaDB
 
-使用 ChromaDB 作为向量数据库，Ollama bge-m3 进行本地嵌入，Ollama qwen3:8b 生成回答，支持流式输出思考过程。提供命令行界面，无需额外部署数据库服务。
+使用 ChromaDB 作为向量数据库，Ollama bge-m3 进行本地嵌入，Ollama qwen3:8b 生成回答。提供命令行和 Gradio Web 两种使用方式，无需额外部署数据库服务。
 
 ```
 文档（TXT / Markdown / PDF）
@@ -20,7 +20,7 @@
 
 ### 方案二：use_pgvector
 
-使用 PostgreSQL + pgvector 作为向量数据库，Ollama bge-m3 进行嵌入，Ollama qwen3:8b 生成回答，并提供 Gradio Web 界面。适合需要持久化存储、完全本地化运行的场景。
+使用 PostgreSQL + pgvector 作为向量数据库，Ollama bge-m3 进行嵌入，Ollama qwen3:8b 生成回答，提供 Gradio Web 界面。适合需要持久化存储、完全本地化运行的场景。
 
 ```
 文档（Markdown）
@@ -45,6 +45,7 @@ simple-rag/
 └── src/
     ├── use_ChromaDB/                  # 方案一：ChromaDB + Ollama
     │   ├── main.py                    # 命令行入口（index / query / run）
+    │   ├── simple_ui.py               # Gradio Web 问答界面
     │   ├── loader.py                  # 文档加载与分块（TXT / Markdown / PDF）
     │   ├── embedder.py                # 文本向量化（Ollama bge-m3）
     │   ├── vectorstore.py             # 向量存储与检索（ChromaDB）
@@ -87,33 +88,34 @@ cd src/use_ChromaDB
 python main.py index --docs ../../docs/ --persist ./chroma_db
 ```
 
-**第二步：问答查询**
-
-```bash
-python main.py query --query "你的问题" --persist ./chroma_db --top-k 5
-```
-
-**一次性完成入库+查询（内存模式）**
-
-```bash
-python main.py run --docs ../../docs/ --query "你的问题"
-```
-
-| 子命令 | 参数 | 说明 |
-|--------|------|------|
-| `index` | `--docs` | 文档路径（文件或目录） |
-| `index` | `--persist` | 向量库持久化目录（默认 `./chroma_db`） |
-| `query` | `--query` | 用户问题 |
-| `query` | `--persist` | 向量库持久化目录（默认 `./chroma_db`） |
-| `query` | `--top-k` | 检索片段数量（默认 5） |
-| `run`   | `--docs` `--query` | 入库+查询一次完成 |
-
 **重新入库（清空旧数据）**
 
 ```bash
 rm -rf ./chroma_db
 python main.py index --docs ../../docs/ --persist ./chroma_db
 ```
+
+**命令行问答**
+
+```bash
+python main.py query --query "你的问题" --persist ./chroma_db --top-k 5
+```
+
+**Web 界面问答**
+
+```bash
+python simple_ui.py
+# 浏览器访问 http://localhost:7860
+```
+
+| 子命令 | 参数 | 说明 |
+|--------|------|------|
+| `index` | `--docs` | 文档路径（文件或目录） |
+| `index` | `--persist` | 向量库目录（默认 `./chroma_db`） |
+| `query` | `--query` | 用户问题 |
+| `query` | `--persist` | 向量库目录（默认 `./chroma_db`） |
+| `query` | `--top-k` | 检索片段数量（默认 5） |
+| `run`   | `--docs` `--query` | 一次性完成入库+查询 |
 
 ---
 
@@ -165,7 +167,7 @@ python3 rag_ui.py
 | 生成模型 | Ollama qwen3:8b | Ollama qwen3:8b |
 | 分块大小 | 500 字符 | 500 字符 |
 | 流式输出 | 是 | 是 |
-| 界面形式 | 命令行 | Gradio Web |
+| 界面形式 | 命令行 + Gradio Web | Gradio Web |
 | 数据持久化 | 可选 | 是 |
 | 额外服务依赖 | 无 | PostgreSQL |
 
