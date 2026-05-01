@@ -24,7 +24,7 @@ class Generator:
         self.base_url = base_url
 
     def generate(self, query: str, context_docs: List[dict]) -> str:
-        """根据检索到的文档片段和用户问题生成回答"""
+        """根据检索到的文档片段和用户问题流式生成回答，边生成边打印"""
         context_text = "\n\n".join(
             f"片段{i+1}【来源：{d['source']}，相关度：{d['score']}】\n{d['content']}"
             for i, d in enumerate(context_docs)
@@ -45,11 +45,33 @@ class Generator:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_message},
                 ],
-                "stream": False,
+                "stream": True,
             }),
+            stream=True,
         )
         response.raise_for_status()
-        answer = response.json()["message"]["content"]
-        # 处理 <think> 标签
-        answer = answer.replace("<think>", "思考:\n").replace("</think>", "\n\n最终答案:\n")
-        return answer
+
+        full = ""
+        in_think = False
+        for line in response.iter_lines():
+            if not line:
+                continue
+            chunk = json.loads(line.decode("utf-8"))
+            delta = chunk.get("message", {}).get("content", "")
+            full += delta
+
+            # 实时将 <think> 替换为可读标签后打印
+            if "<think>" in delta:
+                delta = delta.replace("<think>", "\n思考:\n")
+                in_think = True
+            if "</think>" in delta:
+                delta = delta.replace("</think>", "\n\n最终答案:\n")
+                in_think = False
+
+            print(delta, end="", flush=True)
+
+            if chunk.get("done"):
+                break
+
+        print()  # 换行
+        return full

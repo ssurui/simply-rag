@@ -54,11 +54,10 @@ def cmd_query(args):
         print(r['content'])
     print("=" * 60)
 
-    answer = Generator().generate(args.query, results)
     print("\n" + "=" * 60)
     print("回答：")
     print("=" * 60)
-    print(answer)
+    Generator().generate(args.query, results)
     print("=" * 60)
 
 
