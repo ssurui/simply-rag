@@ -1,23 +1,31 @@
-"""嵌入模块：将文本转换为向量表示"""
+"""嵌入模块：调用本地 Ollama 服务生成向量"""
 
+import requests
 from typing import List
-from sentence_transformers import SentenceTransformer
 
-# 默认使用支持中文的多语言模型
-DEFAULT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+OLLAMA_BASE_URL = "http://localhost:11434"
+DEFAULT_MODEL = "bge-m3"
 
 
 class Embedder:
-    def __init__(self, model_name: str = DEFAULT_MODEL):
-        print(f"[嵌入] 加载模型：{model_name}")
-        self.model = SentenceTransformer(model_name)
+    def __init__(self, model_name: str = DEFAULT_MODEL, base_url: str = OLLAMA_BASE_URL):
+        self.model_name = model_name
+        self.base_url = base_url
+        print(f"[嵌入] 使用 Ollama 模型：{model_name}（{base_url}）")
+
+    def _request(self, texts: List[str]) -> List[List[float]]:
+        """调用 Ollama embed 接口，批量获取向量"""
+        response = requests.post(
+            f"{self.base_url}/api/embed",
+            json={"model": self.model_name, "input": texts},
+        )
+        response.raise_for_status()
+        return response.json()["embeddings"]
 
     def embed(self, texts: List[str]) -> List[List[float]]:
         """批量将文本列表转换为向量"""
-        vectors = self.model.encode(texts, show_progress_bar=True, normalize_embeddings=True)
-        return vectors.tolist()
+        return self._request(texts)
 
     def embed_one(self, text: str) -> List[float]:
         """将单条文本转换为向量"""
-        vector = self.model.encode(text, normalize_embeddings=True)
-        return vector.tolist()
+        return self._request([text])[0]

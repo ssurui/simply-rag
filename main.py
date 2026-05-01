@@ -4,7 +4,6 @@ Simple RAG - 简单检索增强生成示例
 """
 
 import argparse
-from dotenv import load_dotenv
 
 from src.use_ChromaDB.loader import load_documents
 from src.use_ChromaDB.embedder import Embedder
@@ -14,8 +13,6 @@ from src.use_ChromaDB.generator import Generator
 
 
 def main():
-    load_dotenv()
-
     parser = argparse.ArgumentParser(description="Simple RAG 问答系统")
     parser.add_argument("--docs", required=True, help="文档路径（文件或目录）")
     parser.add_argument("--query", required=True, help="用户问题")
