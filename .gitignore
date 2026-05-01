@@ -42,8 +42,6 @@ faiss_index/
 *.log
 logs/
 
-# 文档目录
-docs/
 
 # macOS
 .DS_Store
