@@ -15,17 +15,14 @@ const config: Configuration = {
   ],
   mac: {
     target: [{ target: 'dmg', arch: ['arm64', 'x64'] }],
-    category: 'public.app-category.productivity',
-    icon: 'resources/icon.icns'
+    category: 'public.app-category.productivity'
   },
   win: {
-    target: [{ target: 'nsis', arch: ['x64'] }],
-    icon: 'resources/icon.png'
+    target: [{ target: 'nsis', arch: ['x64'] }]
   },
   linux: {
     target: [{ target: 'AppImage', arch: ['x64'] }],
-    category: 'Utility',
-    icon: 'resources/icon.png'
+    category: 'Utility'
   }
 }
 
