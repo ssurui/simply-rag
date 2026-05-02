@@ -20,7 +20,10 @@ onMounted(async () => {
   <n-message-provider>
     <n-layout style="height: 100vh">
       <n-layout-header style="padding: 0 16px; height: 48px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e0e0e0;">
-        <n-text strong style="font-size: 16px;">RAG 智能助手</n-text>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <img src="/icon.png" style="width: 28px; height: 28px; border-radius: 6px;" />
+          <n-text strong style="font-size: 16px;">RAG 智能助手</n-text>
+        </div>
         <n-space>
           <n-text depth="3" style="font-size: 12px;">
             向量库：{{ store.dbStatus.count }} 条文档
