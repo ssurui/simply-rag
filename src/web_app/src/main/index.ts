@@ -36,12 +36,12 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
-
-  registerIpcHandlers(mainWindow)
 }
 
 app.whenReady().then(() => {
   createWindow()
+  // IPC handlers 只注册一次，传入 getter 确保始终引用当前窗口
+  registerIpcHandlers(() => mainWindow)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

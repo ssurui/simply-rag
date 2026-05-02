@@ -4,7 +4,7 @@ import { embedOne } from '../rag/embedder'
 import { search } from '../db/lancedb'
 import { streamGenerate } from '../rag/generator'
 
-export function registerQueryHandlers(win: BrowserWindow): void {
+export function registerQueryHandlers(getWin: () => BrowserWindow | null): void {
   ipcMain.handle('query', async (_event, payload: {
     question: string
     systemPrompt: string
@@ -17,6 +17,10 @@ export function registerQueryHandlers(win: BrowserWindow): void {
     console.log('[query] 问题：', payload.question)
     console.log('[query] topK：', payload.topK)
     console.log('[query] 嵌入服务：', config.embed.baseUrl, '生成服务：', config.chat.baseUrl, '模型：', config.chat.model)
+
+    const send = (channel: string, data: unknown): void => {
+      getWin()?.webContents.send(channel, data)
+    }
 
     try {
       // 1. 问题向量化
@@ -34,11 +38,11 @@ export function registerQueryHandlers(win: BrowserWindow): void {
         console.log(`  片段${i + 1}  相关度=${c.score}  来源=${c.source}`)
         console.log(`  内容前100字：${c.content.slice(0, 100).replace(/\n/g, ' ')}`)
       })
-      win.webContents.send('query:context', { chunks })
+      send('query:context', { chunks })
 
       if (chunks.length === 0) {
-        win.webContents.send('query:delta', { delta: '我不知道。' })
-        win.webContents.send('query:done', {})
+        send('query:delta', { delta: '我不知道。' })
+        send('query:done', {})
         return
       }
 
@@ -50,13 +54,13 @@ export function registerQueryHandlers(win: BrowserWindow): void {
         config.chat.baseUrl,
         config.chat.model,
         {
-          onDelta: (delta) => win.webContents.send('query:delta', { delta }),
-          onDone: () => win.webContents.send('query:done', {}),
-          onError: (message) => win.webContents.send('query:error', { message })
+          onDelta: (delta) => send('query:delta', { delta }),
+          onDone: () => send('query:done', {}),
+          onError: (message) => send('query:error', { message })
         }
       )
     } catch (e) {
-      win.webContents.send('query:error', { message: String(e) })
+      send('query:error', { message: String(e) })
     }
   })
 }

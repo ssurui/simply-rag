@@ -6,9 +6,10 @@ import { addDocuments } from '../db/lancedb'
 
 const BATCH_SIZE = 16 // 每次批量向 Ollama 请求的文本数
 
-export function registerIndexHandlers(win: BrowserWindow): void {
+export function registerIndexHandlers(getWin: () => BrowserWindow | null): void {
   ipcMain.handle('select-files', async () => {
-    const { filePaths } = await dialog.showOpenDialog(win, {
+    const win = getWin()
+    const { filePaths } = await dialog.showOpenDialog(win ?? undefined as never, {
       title: '选择 Markdown 文件',
       filters: [{ name: 'Markdown', extensions: ['md'] }],
       properties: ['openFile', 'multiSelections']
@@ -17,7 +18,8 @@ export function registerIndexHandlers(win: BrowserWindow): void {
   })
 
   ipcMain.handle('select-directory', async () => {
-    const { filePaths } = await dialog.showOpenDialog(win, {
+    const win = getWin()
+    const { filePaths } = await dialog.showOpenDialog(win ?? undefined as never, {
       title: '选择文档目录',
       properties: ['openDirectory']
     })
@@ -45,7 +47,7 @@ export function registerIndexHandlers(win: BrowserWindow): void {
       )
       const total = chunks.length
       console.log(`[index] 分块完成，共 ${total} 个片段`)
-      win.webContents.send('index:progress', { current: 0, total, file: '正在准备...' })
+      getWin()?.webContents.send('index:progress', { current: 0, total, file: '正在准备...' })
 
       // 2. 批量向量化并写入
       const records: { id: string; content: string; source: string; vector: number[] }[] = []
@@ -64,7 +66,7 @@ export function registerIndexHandlers(win: BrowserWindow): void {
             source: batch[j].source,
             vector: vectors[j]
           })
-          win.webContents.send('index:progress', {
+          getWin()?.webContents.send('index:progress', {
             current: i + j + 1,
             total,
             file: batch[j].source
@@ -76,10 +78,10 @@ export function registerIndexHandlers(win: BrowserWindow): void {
       console.log(`[index] 所有向量化完成，共 ${records.length} 条，正在写入 LanceDB...`)
       await addDocuments(dbPath, records, payload.mode)
       console.log('[index] 写入完成')
-      win.webContents.send('index:done', { total })
+      getWin()?.webContents.send('index:done', { total })
     } catch (e) {
       console.error('[index] 入库失败：', e)
-      win.webContents.send('index:error', { message: String(e) })
+      getWin()?.webContents.send('index:error', { message: String(e) })
     }
   })
 }
