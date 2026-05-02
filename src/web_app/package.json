@@ -1,0 +1,34 @@
+{
+  "name": "simple-rag-app",
+  "version": "1.0.0",
+  "description": "RAG 知识库查询桌面应用",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "vue-tsc --noEmit && electron-vite build",
+    "preview": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps",
+    "package:mac": "electron-builder --mac",
+    "package:win": "electron-builder --win",
+    "package:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "@electron-toolkit/utils": "^3.0.0",
+    "@lancedb/lancedb": "^0.9.0",
+    "@langchain/textsplitters": "^0.1.0",
+    "apache-arrow": "^17.0.0",
+    "naive-ui": "^2.39.0",
+    "pinia": "^2.2.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@electron-toolkit/preload": "^3.0.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.0",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.0.0",
+    "vue-tsc": "^2.0.0"
+  }
+}
