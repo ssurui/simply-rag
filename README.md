@@ -193,6 +193,8 @@ npm run package:linux  # Linux
 
 **开发注意**：退出 `npm run dev` 后若终端显示异常，运行 `printf '\e[?2004l'; stty sane` 恢复。
 
+**安装注意**：更新版本时请先从「应用程序」删除旧版本，再安装新 DMG，避免 IPC handler 重复注册报错。
+
 ---
 
 ## 方案对比

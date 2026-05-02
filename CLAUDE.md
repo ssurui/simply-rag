@@ -93,10 +93,12 @@ interface AppConfig {
 
 ### IPC 通信
 
-- 主进程 → 渲染进程：`win.webContents.send(channel, data)`
+- 主进程 → 渲染进程：`getWin()?.webContents.send(channel, data)`
 - 渲染进程 → 主进程：`ipcRenderer.invoke(channel, payload)`（返回 Promise）
 - 流式事件频道：`index:progress`、`index:done`、`index:error`、`query:context`、`query:delta`、`query:done`、`query:error`
 - preload 的 `on/off` 使用 `removeAllListeners` 而非 `removeListener`，避免 HMR 后监听器累加导致重复触发
+- `registerIpcHandlers` 在 `app.whenReady()` 中只调用一次（不在 `createWindow` 里），避免 macOS 关闭窗口后重新激活时重复注册报错
+- 各 handler 通过 `() => mainWindow` getter 访问窗口，确保窗口重建后引用仍有效
 
 ### Vue Proxy 与 IPC
 
