@@ -32,7 +32,7 @@ export function registerIndexHandlers(win: BrowserWindow): void {
     const dbPath = getDbPath()
 
     console.log('[index] 开始入库，路径：', payload.paths, '模式：', payload.mode)
-    console.log('[index] Ollama 地址：', config.ollama.baseUrl, '嵌入模型：', config.ollama.embedModel)
+    console.log('[index] 嵌入服务：', config.embed.baseUrl, '模型：', config.embed.model)
     console.log('[index] 向量库路径：', dbPath)
 
     try {
@@ -54,7 +54,7 @@ export function registerIndexHandlers(win: BrowserWindow): void {
         const batch = chunks.slice(i, i + BATCH_SIZE)
         const texts = batch.map((c) => c.content)
         console.log(`[index] 向量化 batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(total / BATCH_SIZE)}，片段 ${i + 1}-${Math.min(i + BATCH_SIZE, total)}`)
-        const vectors = await embedTexts(texts, config.ollama.baseUrl, config.ollama.embedModel)
+        const vectors = await embedTexts(texts, config.embed.baseUrl, config.embed.model)
         console.log(`[index] batch 向量化完成，向量维度：${vectors[0]?.length ?? 0}`)
 
         for (let j = 0; j < batch.length; j++) {

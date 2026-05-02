@@ -45,8 +45,10 @@ export const useRagStore = defineStore('rag', () => {
   }
 
   async function saveConfig(cfg: AppConfig): Promise<void> {
-    await window.electronAPI.saveConfig(cfg)
-    config.value = cfg
+    // 消除 Vue Proxy 再传给 IPC
+    const plain: AppConfig = JSON.parse(JSON.stringify(cfg))
+    await window.electronAPI.saveConfig(plain)
+    config.value = plain
   }
 
   function resetAnswer(): void {

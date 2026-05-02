@@ -3,10 +3,13 @@ import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 
 export interface AppConfig {
-  ollama: {
+  embed: {
     baseUrl: string
-    embedModel: string
-    chatModel: string
+    model: string
+  }
+  chat: {
+    baseUrl: string
+    model: string
   }
   rag: {
     chunkSize: number
@@ -17,10 +20,13 @@ export interface AppConfig {
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
-  ollama: {
+  embed: {
     baseUrl: 'http://localhost:11434',
-    embedModel: 'bge-m3',
-    chatModel: 'qwen3:8b'
+    model: 'bge-m3'
+  },
+  chat: {
+    baseUrl: 'http://localhost:11434',
+    model: 'qwen3:8b'
   },
   rag: {
     chunkSize: 500,
@@ -51,8 +57,18 @@ export function getConfig(): AppConfig {
   if (!existsSync(configPath)) return DEFAULT_CONFIG
   try {
     const raw = JSON.parse(readFileSync(configPath, 'utf-8'))
+    // 兼容旧格式（ollama.baseUrl）
+    const embedBase = raw.embed?.baseUrl ?? raw.ollama?.baseUrl ?? DEFAULT_CONFIG.embed.baseUrl
+    const chatBase = raw.chat?.baseUrl ?? raw.ollama?.baseUrl ?? DEFAULT_CONFIG.chat.baseUrl
     return {
-      ollama: { ...DEFAULT_CONFIG.ollama, ...raw.ollama },
+      embed: {
+        baseUrl: embedBase,
+        model: raw.embed?.model ?? raw.ollama?.embedModel ?? DEFAULT_CONFIG.embed.model
+      },
+      chat: {
+        baseUrl: chatBase,
+        model: raw.chat?.model ?? raw.ollama?.chatModel ?? DEFAULT_CONFIG.chat.model
+      },
       rag: { ...DEFAULT_CONFIG.rag, ...raw.rag }
     }
   } catch {

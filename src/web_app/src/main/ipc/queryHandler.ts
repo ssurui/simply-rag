@@ -16,14 +16,14 @@ export function registerQueryHandlers(win: BrowserWindow): void {
     console.log(`\n${'='.repeat(60)}`)
     console.log('[query] 问题：', payload.question)
     console.log('[query] topK：', payload.topK)
-    console.log('[query] 模型：', config.ollama.chatModel)
+    console.log('[query] 嵌入服务：', config.embed.baseUrl, '生成服务：', config.chat.baseUrl, '模型：', config.chat.model)
 
     try {
       // 1. 问题向量化
       const queryVector = await embedOne(
         payload.question,
-        config.ollama.baseUrl,
-        config.ollama.embedModel
+        config.embed.baseUrl,
+        config.embed.model
       )
       console.log('[query] 问题向量化完成，维度：', queryVector.length)
 
@@ -47,8 +47,8 @@ export function registerQueryHandlers(win: BrowserWindow): void {
         payload.question,
         chunks,
         payload.systemPrompt,
-        config.ollama.baseUrl,
-        config.ollama.chatModel,
+        config.chat.baseUrl,
+        config.chat.model,
         {
           onDelta: (delta) => win.webContents.send('query:delta', { delta }),
           onDone: () => win.webContents.send('query:done', {}),

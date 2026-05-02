@@ -1,8 +1,11 @@
 export interface AppConfig {
-  ollama: {
+  embed: {
     baseUrl: string
-    embedModel: string
-    chatModel: string
+    model: string
+  }
+  chat: {
+    baseUrl: string
+    model: string
   }
   rag: {
     chunkSize: number
