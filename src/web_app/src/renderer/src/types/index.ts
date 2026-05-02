@@ -41,7 +41,7 @@ declare global {
       getConfig: () => Promise<AppConfig>
       saveConfig: (config: AppConfig) => Promise<void>
       on: (channel: string, callback: (...args: unknown[]) => void) => void
-      off: (channel: string, callback: (...args: unknown[]) => void) => void
+      off: (channel: string) => void
     }
   }
 }

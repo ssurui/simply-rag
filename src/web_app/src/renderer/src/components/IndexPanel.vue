@@ -64,7 +64,8 @@ async function startIndex(): Promise<void> {
   window.electronAPI.on('index:done', onDone)
   window.electronAPI.on('index:error', onError)
 
-  await window.electronAPI.indexDocuments({ paths: selectedPaths.value, mode: mode.value })
+  await window.electronAPI.indexDocuments({ paths: [...selectedPaths.value], mode: mode.value })
+  console.log('[IndexPanel] indexDocuments 调用返回')
 }
 </script>
 

@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   NInput, NButton, NSpace, NText, NInputNumber,
   NScrollbar, NCollapse, NCollapseItem, useMessage
 } from 'naive-ui'
+import { marked } from 'marked'
 import { useRagStore } from '../stores/rag'
 import type { Chunk } from '../types'
 
 const store = useRagStore()
 const message = useMessage()
 const question = ref('')
+const sentQuestion = ref('')
 const scrollbarRef = ref<InstanceType<typeof NScrollbar> | null>(null)
 
 const DEFAULT_SYSTEM_PROMPT = `你是一个阅读理解助手，专门帮助用户基于给定的上下文内容回答问题。
@@ -22,6 +24,12 @@ const DEFAULT_SYSTEM_PROMPT = `你是一个阅读理解助手，专门帮助用�
 
 const systemPrompt = ref(store.config?.rag.systemPrompt ?? DEFAULT_SYSTEM_PROMPT)
 const topK = ref(store.config?.rag.topK ?? 5)
+
+const renderedAnswer = computed(() => {
+  const text = store.displayAnswer
+  if (!text) return ''
+  return marked(text) as string
+})
 
 function scrollToBottom(): void {
   nextTick(() => scrollbarRef.value?.scrollTo({ top: 9999, behavior: 'smooth' }))
@@ -38,6 +46,7 @@ async function sendQuery(): Promise<void> {
 
   store.querying = true
   store.resetAnswer()
+  sentQuestion.value = q
   question.value = ''
 
   const onContext = (data: unknown) => {
@@ -58,10 +67,10 @@ async function sendQuery(): Promise<void> {
   }
 
   function cleanup(): void {
-    window.electronAPI.off('query:context', onContext)
-    window.electronAPI.off('query:delta', onDelta)
-    window.electronAPI.off('query:done', onDone)
-    window.electronAPI.off('query:error', onError)
+    window.electronAPI.off('query:context')
+    window.electronAPI.off('query:delta')
+    window.electronAPI.off('query:done')
+    window.electronAPI.off('query:error')
   }
 
   window.electronAPI.on('query:context', onContext)
@@ -110,7 +119,13 @@ onMounted(() => {
       <div v-if="!store.rawAnswer && !store.querying" style="color: #aaa; text-align: center; padding: 40px 0;">
         在下方输入问题开始对话
       </div>
-      <pre v-else style="white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.7;">{{ store.displayAnswer }}</pre>
+      <template v-else>
+        <div style="margin-bottom: 12px; padding: 8px 12px; background: #f0f7ff; border-radius: 6px; border-left: 3px solid #63b3ed;">
+          <n-text depth="3" style="font-size: 11px; display: block; margin-bottom: 2px;">问题</n-text>
+          <n-text style="font-size: 14px;">{{ sentQuestion }}</n-text>
+        </div>
+        <div class="markdown-body" v-html="renderedAnswer" />
+      </template>
     </n-scrollbar>
 
     <!-- 检索片段按钮 -->
@@ -131,7 +146,7 @@ onMounted(() => {
         :min="1"
         :max="20"
         size="small"
-        style="width: 100px;"
+        style="width: 130px;"
       >
         <template #prefix><n-text depth="3" style="font-size: 12px;">Top-K</n-text></template>
       </n-input-number>
@@ -156,3 +171,62 @@ onMounted(() => {
     </n-space>
   </div>
 </template>
+
+<style scoped>
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #333;
+}
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3) {
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+.markdown-body :deep(h1) { font-size: 1.4em; }
+.markdown-body :deep(h2) { font-size: 1.2em; }
+.markdown-body :deep(h3) { font-size: 1.05em; }
+.markdown-body :deep(p) { margin: 6px 0; }
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) { padding-left: 1.5em; margin: 6px 0; }
+.markdown-body :deep(li) { margin: 2px 0; }
+.markdown-body :deep(code) {
+  background: #f0f0f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: monospace;
+}
+.markdown-body :deep(pre) {
+  background: #f6f8fa;
+  padding: 10px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.markdown-body :deep(pre code) { background: none; padding: 0; }
+.markdown-body :deep(blockquote) {
+  border-left: 3px solid #ddd;
+  padding-left: 12px;
+  color: #666;
+  margin: 6px 0;
+}
+.markdown-body :deep(hr) {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 10px 0;
+}
+.markdown-body :deep(strong) { font-weight: 600; }
+.markdown-body :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+}
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+}
+.markdown-body :deep(th) { background: #f5f5f5; }
+</style>

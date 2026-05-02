@@ -13,6 +13,11 @@ export function registerQueryHandlers(win: BrowserWindow): void {
     const config = getConfig()
     const dbPath = getDbPath()
 
+    console.log(`\n${'='.repeat(60)}`)
+    console.log('[query] 问题：', payload.question)
+    console.log('[query] topK：', payload.topK)
+    console.log('[query] 模型：', config.ollama.chatModel)
+
     try {
       // 1. 问题向量化
       const queryVector = await embedOne(
@@ -20,9 +25,15 @@ export function registerQueryHandlers(win: BrowserWindow): void {
         config.ollama.baseUrl,
         config.ollama.embedModel
       )
+      console.log('[query] 问题向量化完成，维度：', queryVector.length)
 
       // 2. 向量检索
       const chunks = await search(dbPath, queryVector, payload.topK)
+      console.log(`[query] 检索到 ${chunks.length} 个片段：`)
+      chunks.forEach((c, i) => {
+        console.log(`  片段${i + 1}  相关度=${c.score}  来源=${c.source}`)
+        console.log(`  内容前100字：${c.content.slice(0, 100).replace(/\n/g, ' ')}`)
+      })
       win.webContents.send('query:context', { chunks })
 
       if (chunks.length === 0) {

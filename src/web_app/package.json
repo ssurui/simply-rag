@@ -17,12 +17,14 @@
     "@lancedb/lancedb": "^0.9.0",
     "@langchain/textsplitters": "^0.1.0",
     "apache-arrow": "^17.0.0",
+    "marked": "^18.0.3",
     "naive-ui": "^2.39.0",
     "pinia": "^2.2.0",
     "vue": "^3.4.0"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.0",
+    "@types/marked": "^5.0.2",
     "@vitejs/plugin-vue": "^5.0.0",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.0",

@@ -32,10 +32,15 @@ export const useRagStore = defineStore('rag', () => {
   })
 
   async function refreshDbStatus(): Promise<void> {
+    if (!window.electronAPI) {
+      console.error('[store] window.electronAPI 未定义，preload 可能未加载')
+      return
+    }
     dbStatus.value = await window.electronAPI.getDbStatus()
   }
 
   async function loadConfig(): Promise<void> {
+    if (!window.electronAPI) return
     config.value = await window.electronAPI.getConfig()
   }
 

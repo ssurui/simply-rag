@@ -46,6 +46,11 @@ logs/
 # macOS
 .DS_Store
 
+# Node.js / Electron
+src/web_app/node_modules/
+src/web_app/out/
+src/web_app/dist/
+
 # 测试覆盖率
 .coverage
 htmlcov/

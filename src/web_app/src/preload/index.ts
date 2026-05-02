@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+console.log('[preload] 正在注册 electronAPI...')
+
 contextBridge.exposeInMainWorld('electronAPI', {
   // 文件选择
   selectFiles: (): Promise<string[]> =>
@@ -23,9 +25,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 事件监听
   on: (channel: string, callback: (...args: unknown[]) => void) => {
+    // 每次注册前先清除该频道的所有旧监听，避免累加
+    ipcRenderer.removeAllListeners(channel)
     ipcRenderer.on(channel, (_event, ...args) => callback(...args))
   },
-  off: (channel: string, callback: (...args: unknown[]) => void) => {
-    ipcRenderer.removeListener(channel, callback as never)
+  off: (channel: string) => {
+    ipcRenderer.removeAllListeners(channel)
   }
 })

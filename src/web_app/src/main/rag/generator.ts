@@ -24,6 +24,12 @@ ${context}
 
 请回答以下问题：${question}`
 
+  console.log('\n[generator] ---- 发送给 LLM 的完整消息 ----')
+  console.log('[generator] system prompt：\n', systemPrompt)
+  console.log('[generator] user message：\n', userMessage)
+  console.log('[generator] ---- 消息结束 ----\n')
+
+  let fullResponse = ''
   let response: Response
   try {
     response = await fetch(`${baseUrl}/api/chat`, {
@@ -63,8 +69,14 @@ ${context}
       try {
         const chunk = JSON.parse(line)
         const delta: string = chunk.message?.content ?? ''
-        if (delta) callbacks.onDelta(delta)
+        if (delta) {
+          fullResponse += delta
+          callbacks.onDelta(delta)
+        }
         if (chunk.done) {
+          console.log('[generator] ---- LLM 完整回复 ----')
+          console.log(fullResponse)
+          console.log('[generator] ---- 回复结束 ----\n')
           callbacks.onDone()
           return
         }
