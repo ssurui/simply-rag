@@ -181,6 +181,18 @@ npm run package:linux  # Linux
 3. 入库完成后在右侧输入问题，按 Enter 发送
 4. 点击「查看检索片段」可查看每次查询的原始上下文
 
+**设置**：点击右上角「设置」按钮可分别配置嵌入模型服务地址和生成模型服务地址，支持两类模型部署在不同机器上。
+
+**数据存储位置**：
+
+| 平台 | 路径 |
+|------|------|
+| macOS | `~/Library/Application Support/simple-rag-app/` |
+| Windows | `%APPDATA%\simple-rag-app\` |
+| Linux | `~/.config/simple-rag-app/` |
+
+**开发注意**：退出 `npm run dev` 后若终端显示异常，运行 `printf '\e[?2004l'; stty sane` 恢复。
+
 ---
 
 ## 方案对比

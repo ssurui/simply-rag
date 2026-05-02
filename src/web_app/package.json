@@ -4,7 +4,7 @@
   "description": "RAG 知识库查询桌面应用",
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "electron-vite dev; printf '\\e[?2004l'; stty sane",
     "build": "vue-tsc --noEmit && electron-vite build",
     "preview": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",

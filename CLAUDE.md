@@ -29,7 +29,7 @@ Simple RAG 是一个本地化 RAG 问答系统，提供三种实现方案：
 - **UI 组件库**：Naive UI
 - **状态管理**：Pinia
 - **向量数据库**：LanceDB（`@lancedb/lancedb`，嵌入式，无需服务）
-- **文档分块**：`@langchain/textsplitters`（RecursiveCharacterTextSplitter）
+- **文档分块**：自实现递归字符分块（已移除 `@langchain/textsplitters`，避免打包依赖问题）
 - **Markdown 渲染**：`marked`
 - **打包**：electron-builder（支持 macOS / Windows / Linux）
 
@@ -59,7 +59,7 @@ src/web_app/src/
             queryHandler.ts   # 查询（向量化→检索→流式生成）
             statusHandler.ts  # 数据库状态、配置读写
         rag/
-            splitter.ts       # 递归收集 .md 文件，RecursiveCharacterTextSplitter
+            splitter.ts       # 递归收集 .md 文件，自实现递归字符分块（chunkSize/chunkOverlap）
             embedder.ts       # Ollama /api/embed 调用
             generator.ts      # Ollama /api/chat 流式调用
         db/
@@ -72,12 +72,24 @@ src/web_app/src/
             IndexPanel.vue    # 文档入库面板
             ChatPanel.vue     # 问答面板（显示问题 + Markdown 渲染答案）
             ContextDrawer.vue # 检索片段抽屉
-            SettingsModal.vue # Ollama 配置弹窗
+            SettingsModal.vue # 配置弹窗（嵌入/生成服务地址分别配置）
         stores/rag.ts     # Pinia store（dbStatus / indexing / querying / chunks / config）
         types/index.ts    # TypeScript 接口定义 + Window.electronAPI 类型声明
 ```
 
 ## 关键约定
+
+### AppConfig 结构
+
+```typescript
+interface AppConfig {
+  embed: { baseUrl: string; model: string }   // 嵌入模型服务（可独立配置）
+  chat:  { baseUrl: string; model: string }   // 生成模型服务（可独立配置）
+  rag:   { chunkSize: number; chunkOverlap: number; topK: number; systemPrompt: string }
+}
+```
+
+配置存储于 `userData/config.json`，兼容旧格式（`ollama.baseUrl`）自动迁移。
 
 ### IPC 通信
 
@@ -137,6 +149,19 @@ npm run dev      # 开发模式（主进程变更需重启，渲染进程支持 
 ```
 
 主进程代码修改后需要完整重启 `npm run dev`，渲染进程（Vue 组件）修改后 HMR 自动生效。
+
+退出后若终端显示异常（括号粘贴模式残留），运行：
+
+```bash
+printf '\e[?2004l'; stty sane
+```
+
+### 图标
+
+应用图标存放于 `src/web_app/resources/`：
+- `icon.icns`：macOS 专用（含 16~1024 各尺寸）
+- `icon.png`：Windows / Linux 通用（1024×1024）
+- `src/renderer/public/icon.png`：界面标题栏展示用
 
 ### 修改 Prompt
 
